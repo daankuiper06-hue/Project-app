@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import NavBar from "../../components/NavBar";
+import NavBar from "../components/NavBar";
 
 function euro(value) {
   return new Intl.NumberFormat("nl-NL", {
