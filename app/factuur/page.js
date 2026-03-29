@@ -8,6 +8,15 @@ function euro(bedrag) {
 }
 
 export default function FactuurPage() {
+  const regels = [
+    { omschrijving: "Materiaal voorbeeld", aantal: 2, prijs: 45, btw: 21 },
+    { omschrijving: "Arbeid voorbeeld", aantal: 4, prijs: 25, btw: 21 },
+  ];
+
+  const subtotaal = regels.reduce((sum, r) => sum + r.aantal * r.prijs, 0);
+  const btw = subtotaal * 0.21;
+  const totaal = subtotaal + btw;
+
   return (
     <main style={styles.page}>
       <div style={styles.toolbar}>
@@ -22,7 +31,7 @@ export default function FactuurPage() {
           <div>
             <h1 style={styles.invoiceTitle}>FACTUUR</h1>
             <p style={styles.muted}>Factuurnummer: 2026-001</p>
-            <p style={styles.muted}>Datum: 29-03-2026</p>
+            <p style={styles.muted}>Datum: {new Date().toLocaleDateString("nl-NL")}</p>
           </div>
 
           <div style={styles.companyBlock}>
@@ -37,14 +46,14 @@ export default function FactuurPage() {
           <div style={styles.infoBox}>
             <h3 style={styles.infoTitle}>Factuur aan</h3>
             <p style={styles.text}>Klantnaam</p>
-            <p style={styles.text}>Straat 1</p>
-            <p style={styles.text}>1234 AB Plaats</p>
+            <p style={styles.text}>Adres</p>
+            <p style={styles.text}>Postcode Plaats</p>
           </div>
 
           <div style={styles.infoBox}>
             <h3 style={styles.infoTitle}>Project</h3>
             <p style={styles.text}>Projectnaam</p>
-            <p style={styles.text}>Werkdatum: 29-03-2026</p>
+            <p style={styles.text}>Werkdatum</p>
           </div>
         </section>
 
@@ -59,28 +68,30 @@ export default function FactuurPage() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style={styles.td}>Voorbeeld regel</td>
-              <td style={styles.td}>1</td>
-              <td style={styles.td}>{euro(100)}</td>
-              <td style={styles.td}>21%</td>
-              <td style={styles.td}>{euro(100)}</td>
-            </tr>
+            {regels.map((regel, index) => (
+              <tr key={index}>
+                <td style={styles.td}>{regel.omschrijving}</td>
+                <td style={styles.td}>{regel.aantal}</td>
+                <td style={styles.td}>{euro(regel.prijs)}</td>
+                <td style={styles.td}>{regel.btw}%</td>
+                <td style={styles.td}>{euro(regel.aantal * regel.prijs)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
         <div style={styles.totalBox}>
           <div style={styles.totalRow}>
             <span>Subtotaal</span>
-            <strong>{euro(100)}</strong>
+            <strong>{euro(subtotaal)}</strong>
           </div>
           <div style={styles.totalRow}>
             <span>BTW</span>
-            <strong>{euro(21)}</strong>
+            <strong>{euro(btw)}</strong>
           </div>
           <div style={{ ...styles.totalRow, ...styles.totalFinal }}>
             <span>Totaal</span>
-            <strong>{euro(121)}</strong>
+            <strong>{euro(totaal)}</strong>
           </div>
         </div>
       </div>
@@ -94,8 +105,6 @@ const styles = {
     background: "#eef2f6",
     padding: "24px 16px",
     color: "#111827",
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
   },
   toolbar: {
     maxWidth: "1000px",
@@ -195,7 +204,7 @@ const styles = {
   },
   totalBox: {
     marginLeft: "auto",
-    maxWidth: "380px",
+    maxWidth: "360px",
     background: "#f9fafb",
     borderRadius: "12px",
     padding: "16px",
