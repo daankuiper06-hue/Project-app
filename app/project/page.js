@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import NavBar from "../../../components/NavBar";
+import NavBar from "../../components/NavBar";
 
 export default function ProjectPage() {
   const [projects, setProjects] = useState([]);
