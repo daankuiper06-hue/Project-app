@@ -1,114 +1,281 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-function getProjecten() {
-  if (typeof window === "undefined") return [];
-  const raw = localStorage.getItem("project-app-data-v2");
-  return raw ? JSON.parse(raw) : [];
+const STORAGE_KEY = "dkuiper_app_data_v1";
+
+function getLegeProjectenData() {
+  return {
+    activeProjectId: null,
+    margePercentage: 20,
+    projecten: [],
+  };
 }
 
-function saveProjecten(projecten) {
-  localStorage.setItem("project-app-data-v2", JSON.stringify(projecten));
-}
+export default function ProjectenPage() {
+  const [data, setData] = useState(getLegeProjectenData());
+  const [geladen, setGeladen] = useState(false);
 
-export default function ProjectPage() {
-  const [projecten, setProjecten] = useState([]);
-  const [project, setProject] = useState(null);
+  const [nieuwProject, setNieuwProject] = useState({
+    naam: "",
+    klant: "",
+    startdatum: "",
+    status: "Lopend",
+  });
 
   useEffect(() => {
-    const data = getProjecten();
-    setProjecten(data);
-
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-    setProject(data.find((p) => p.id === id) || null);
+    const opgeslagen = localStorage.getItem(STORAGE_KEY);
+    if (opgeslagen) {
+      setData(JSON.parse(opgeslagen));
+    }
+    setGeladen(true);
   }, []);
 
-  const projectId = useMemo(() => project?.id || "", [project]);
+  useEffect(() => {
+    if (geladen) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+  }, [data, geladen]);
 
-  function updateField(field, value) {
-    const updated = projecten.map((p) =>
-      p.id === projectId ? { ...p, [field]: value } : p
-    );
-    setProjecten(updated);
-    saveProjecten(updated);
-    setProject(updated.find((p) => p.id === projectId));
+  function maakProjectAan() {
+    if (!nieuwProject.naam || !nieuwProject.klant || !nieuwProject.startdatum) {
+      alert("Vul projectnaam, klantnaam en startdatum in.");
+      return;
+    }
+
+    const project = {
+      id: Date.now(),
+      naam: nieuwProject.naam,
+      klant: nieuwProject.klant,
+      startdatum: nieuwProject.startdatum,
+      status: nieuwProject.status,
+      materialen: [],
+      arbeid: [],
+    };
+
+    setData((prev) => ({
+      ...prev,
+      activeProjectId: project.id,
+      projecten: [...prev.projecten, project],
+    }));
+
+    setNieuwProject({
+      naam: "",
+      klant: "",
+      startdatum: "",
+      status: "Lopend",
+    });
   }
 
-  if (!project) {
-    return (
-      <main style={styles.page}>
-        <div style={styles.container}>
-          <div style={styles.card}>
-            <h1 style={styles.title}>Project niet gevonden</h1>
-            <a href="/" style={styles.backButton}>← Terug</a>
-          </div>
-        </div>
-      </main>
-    );
+  function verwijderProject(id) {
+    const ok = confirm("Weet je zeker dat je dit project wilt verwijderen?");
+    if (!ok) return;
+
+    setData((prev) => {
+      const nieuweProjecten = prev.projecten.filter((p) => p.id !== id);
+      return {
+        ...prev,
+        activeProjectId: nieuweProjecten[0]?.id || null,
+        projecten: nieuweProjecten,
+      };
+    });
   }
+
+  function setActief(id) {
+    setData((prev) => ({
+      ...prev,
+      activeProjectId: id,
+    }));
+  }
+
+  function updateProject(id, field, value) {
+    setData((prev) => ({
+      ...prev,
+      projecten: prev.projecten.map((p) =>
+        p.id === id ? { ...p, [field]: value } : p
+      ),
+    }));
+  }
+
+  const actiefProject =
+    data.projecten.find((p) => p.id === data.activeProjectId) || null;
 
   return (
     <main style={styles.page}>
       <div style={styles.container}>
-        <header style={styles.header}>
-          <div>
-            <h1 style={styles.title}>Project</h1>
-            <p style={styles.subtitle}>Gegevens van dit project</p>
-          </div>
-          <div style={styles.buttons}>
-            <a href={`/calculatie?id=${project.id}`} style={styles.linkButton}>
-              Calculatie
-            </a>
-            <a href={`/factuur?id=${project.id}`} style={styles.linkButton}>
-              Factuur
-            </a>
-            <a href="/" style={styles.backButton}>← Terug</a>
-          </div>
-        </header>
+        <nav style={styles.navBar}>
+          <a href="/" style={styles.navLink}>Overzicht</a>
+          <a href="/projecten" style={styles.navLinkActive}>Projecten</a>
+          <a href="/calculatie" style={styles.navLink}>Calculatie</a>
+          <a href="/facturen" style={styles.navLink}>Facturen</a>
+        </nav>
 
-        <section style={styles.card}>
-          <div style={styles.grid}>
-            <div>
-              <label style={styles.label}>Projectnaam</label>
-              <input
-                style={styles.input}
-                value={project.naam}
-                onChange={(e) => updateField("naam", e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={styles.label}>Klantnaam</label>
-              <input
-                style={styles.input}
-                value={project.klant}
-                onChange={(e) => updateField("klant", e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={styles.label}>Datum</label>
-              <input
-                type="date"
-                style={styles.input}
-                value={project.datum}
-                onChange={(e) => updateField("datum", e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={styles.label}>Status</label>
-              <select
-                style={styles.input}
-                value={project.status}
-                onChange={(e) => updateField("status", e.target.value)}
-              >
-                <option>Lopend</option>
-                <option>Verstuurd</option>
-                <option>Betaald</option>
-              </select>
-            </div>
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.title}>Projecten</h1>
+            <p style={styles.subtitle}>Projecten aanmaken en beheren</p>
           </div>
-        </section>
+        </div>
+
+        <div style={styles.grid}>
+          <section style={styles.card}>
+            <h2 style={styles.sectionTitle}>Nieuw project</h2>
+
+            <div style={styles.formGrid}>
+              <div>
+                <label style={styles.label}>Projectnaam</label>
+                <input
+                  style={styles.input}
+                  value={nieuwProject.naam}
+                  onChange={(e) =>
+                    setNieuwProject({ ...nieuwProject, naam: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Klantnaam</label>
+                <input
+                  style={styles.input}
+                  value={nieuwProject.klant}
+                  onChange={(e) =>
+                    setNieuwProject({ ...nieuwProject, klant: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Startdatum</label>
+                <input
+                  type="date"
+                  style={styles.input}
+                  value={nieuwProject.startdatum}
+                  onChange={(e) =>
+                    setNieuwProject({
+                      ...nieuwProject,
+                      startdatum: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Status</label>
+                <select
+                  style={styles.input}
+                  value={nieuwProject.status}
+                  onChange={(e) =>
+                    setNieuwProject({ ...nieuwProject, status: e.target.value })
+                  }
+                >
+                  <option>Lopend</option>
+                  <option>Verstuurd</option>
+                  <option>Betaald</option>
+                </select>
+              </div>
+            </div>
+
+            <button style={styles.primaryButton} onClick={maakProjectAan}>
+              + Project aanmaken
+            </button>
+          </section>
+
+          <section style={styles.card}>
+            <h2 style={styles.sectionTitle}>Projectlijst</h2>
+
+            {data.projecten.length === 0 ? (
+              <div style={styles.empty}>Nog geen projecten aangemaakt.</div>
+            ) : (
+              <div style={styles.projectList}>
+                {data.projecten.map((project) => (
+                  <div
+                    key={project.id}
+                    style={{
+                      ...styles.projectItem,
+                      ...(project.id === data.activeProjectId
+                        ? styles.projectItemActive
+                        : {}),
+                    }}
+                  >
+                    <div
+                      style={styles.projectItemContent}
+                      onClick={() => setActief(project.id)}
+                    >
+                      <strong>{project.naam}</strong>
+                      <div style={styles.meta}>{project.klant}</div>
+                      <div style={styles.meta}>{project.startdatum}</div>
+                      <div style={styles.badge}>{project.status}</div>
+                    </div>
+
+                    <button
+                      style={styles.deleteButton}
+                      onClick={() => verwijderProject(project.id)}
+                    >
+                      Verwijder
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        {actiefProject && (
+          <section style={{ ...styles.card, marginTop: 20 }}>
+            <h2 style={styles.sectionTitle}>Actief project</h2>
+
+            <div style={styles.formGrid}>
+              <div>
+                <label style={styles.label}>Projectnaam</label>
+                <input
+                  style={styles.input}
+                  value={actiefProject.naam}
+                  onChange={(e) =>
+                    updateProject(actiefProject.id, "naam", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Klantnaam</label>
+                <input
+                  style={styles.input}
+                  value={actiefProject.klant}
+                  onChange={(e) =>
+                    updateProject(actiefProject.id, "klant", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Startdatum</label>
+                <input
+                  type="date"
+                  style={styles.input}
+                  value={actiefProject.startdatum}
+                  onChange={(e) =>
+                    updateProject(actiefProject.id, "startdatum", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Status</label>
+                <select
+                  style={styles.input}
+                  value={actiefProject.status}
+                  onChange={(e) =>
+                    updateProject(actiefProject.id, "status", e.target.value)
+                  }
+                >
+                  <option>Lopend</option>
+                  <option>Verstuurd</option>
+                  <option>Betaald</option>
+                </select>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );
@@ -116,58 +283,119 @@ export default function ProjectPage() {
 
 const styles = {
   page: { minHeight: "100vh", padding: "24px 16px" },
-  container: { maxWidth: "1100px", margin: "0 auto" },
-  header: {
+  container: { maxWidth: "1200px", margin: "0 auto" },
+  navBar: {
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 16,
+    gap: "12px",
     flexWrap: "wrap",
-    marginBottom: 24,
-  },
-  buttons: { display: "flex", gap: 10, flexWrap: "wrap" },
-  title: { margin: 0, fontSize: 32, fontWeight: 700 },
-  subtitle: { margin: "6px 0 0 0", color: "#6b7280" },
-  card: {
     background: "#fff",
-    borderRadius: 16,
-    padding: 20,
+    padding: "12px",
+    borderRadius: "16px",
     boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+    marginBottom: "24px",
   },
+  navLink: {
+    textDecoration: "none",
+    color: "#111827",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    fontWeight: 600,
+  },
+  navLinkActive: {
+    textDecoration: "none",
+    color: "#fff",
+    background: "#111827",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    fontWeight: 600,
+  },
+  header: { marginBottom: "24px" },
+  title: { margin: 0, fontSize: "32px", fontWeight: 700 },
+  subtitle: { margin: "8px 0 0 0", color: "#6b7280" },
   grid: {
     display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "20px",
+  },
+  card: {
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "20px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+  },
+  sectionTitle: { marginTop: 0, marginBottom: "16px" },
+  formGrid: {
+    display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 16,
+    gap: "16px",
+    marginBottom: "16px",
   },
   label: {
     display: "block",
-    marginBottom: 6,
+    marginBottom: "6px",
+    fontSize: "13px",
     fontWeight: 600,
-    fontSize: 13,
     color: "#374151",
   },
   input: {
     width: "100%",
-    boxSizing: "border-box",
-    padding: 12,
-    borderRadius: 12,
+    padding: "12px",
+    borderRadius: "12px",
     border: "1px solid #d1d5db",
+    boxSizing: "border-box",
   },
-  linkButton: {
-    textDecoration: "none",
+  primaryButton: {
     background: "#111827",
     color: "#fff",
-    borderRadius: 12,
-    padding: "12px 14px",
+    border: "none",
+    borderRadius: "12px",
+    padding: "12px 16px",
     fontWeight: 600,
   },
-  backButton: {
-    textDecoration: "none",
-    background: "#fff",
-    color: "#111827",
-    border: "1px solid #d1d5db",
-    borderRadius: 12,
-    padding: "12px 14px",
+  empty: {
+    padding: "24px",
+    background: "#f9fafb",
+    borderRadius: "12px",
+    color: "#6b7280",
+  },
+  projectList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+  projectItem: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "14px",
+    padding: "14px",
+    background: "#f9fafb",
+  },
+  projectItemActive: {
+    border: "1px solid #111827",
+  },
+  projectItemContent: {
+    cursor: "pointer",
+    marginBottom: "10px",
+  },
+  meta: {
+    color: "#6b7280",
+    fontSize: "13px",
+    marginTop: "4px",
+  },
+  badge: {
+    display: "inline-block",
+    marginTop: "8px",
+    background: "#e5e7eb",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 600,
+  },
+  deleteButton: {
+    background: "#fee2e2",
+    color: "#991b1b",
+    border: "none",
+    borderRadius: "10px",
+    padding: "10px 12px",
     fontWeight: 600,
   },
 };
