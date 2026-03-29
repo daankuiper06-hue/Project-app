@@ -19,7 +19,7 @@ function getLegeData() {
   };
 }
 
-export default function FacturenPage() {
+export default function FactuurPage() {
   const [data, setData] = useState(getLegeData());
 
   useEffect(() => {
@@ -29,115 +29,95 @@ export default function FacturenPage() {
     }
   }, []);
 
-  const actiefProject =
+  const project =
     data.projecten.find((p) => p.id === data.activeProjectId) || null;
 
-  const totaal = useMemo(() => {
-    if (!actiefProject) return { materialen: 0, arbeid: 0, totaal: 0 };
+  const berekening = useMemo(() => {
+    if (!project) return { subtotaal: 0, btw: 0, totaal: 0 };
 
     const margeFactor = 1 + Number(data.margePercentage || 0) / 100;
 
-    const materialen = (actiefProject.materialen || []).reduce((sum, item) => {
-      const verkoopPerStuk = Number(item.inkoopprijs || 0) * margeFactor;
-      return sum + verkoopPerStuk * Number(item.aantal || 0);
+    const subtotaal = (project.materialen || []).reduce((sum, item) => {
+      const verkoop =
+        Number(item.inkoopprijs || 0) * margeFactor * Number(item.aantal || 0);
+      return sum + verkoop;
     }, 0);
 
-    const arbeid = (actiefProject.arbeid || []).reduce((sum, item) => {
-      return sum + Number(item.uren || 0) * Number(item.tarief || 0);
-    }, 0);
+    const btw = subtotaal * 0.21;
+    const totaal = subtotaal + btw;
 
-    return {
-      materialen,
-      arbeid,
-      totaal: materialen + arbeid,
-    };
-  }, [actiefProject, data.margePercentage]);
+    return { subtotaal, btw, totaal };
+  }, [project, data.margePercentage]);
 
   return (
     <main style={styles.page}>
       <div style={styles.container}>
+        
+        {/* NAVIGATIE */}
         <nav style={styles.navBar}>
           <a href="/" style={styles.navLink}>Overzicht</a>
-          <a href="/projecten" style={styles.navLink}>Projecten</a>
+          <a href="/project" style={styles.navLink}>Projecten</a>
           <a href="/calculatie" style={styles.navLink}>Calculatie</a>
-          <a href="/facturen" style={styles.navLinkActive}>Facturen</a>
+          <a href="/factuur" style={styles.navLinkActive}>Factuur</a>
         </nav>
 
-        {!actiefProject ? (
-          <section style={styles.paper}>
-            <h1 style={styles.title}>Factuur</h1>
-            <p style={styles.text}>Kies eerst een actief project.</p>
-          </section>
+        {!project ? (
+          <div style={styles.card}>
+            Kies eerst een project
+          </div>
         ) : (
           <>
             <div style={styles.toolbar}>
               <button onClick={() => window.print()} style={styles.printButton}>
-                Afdrukken / PDF
+                Print / PDF
               </button>
             </div>
 
-            <section style={styles.paper}>
-              <header style={styles.header}>
+            <div style={styles.paper}>
+              
+              {/* HEADER (alleen wat jij wil) */}
+              <div style={styles.header}>
                 <div>
-                  <h1 style={styles.invoiceTitle}>FACTUUR</h1>
-                  <p style={styles.muted}>Project: {actiefProject.naam}</p>
-                  <p style={styles.muted}>
+                  <h2 style={styles.title}>{project.naam}</h2>
+                  <p style={styles.text}>Klant: {project.klant}</p>
+                  <p style={styles.text}>
                     Datum: {new Date().toLocaleDateString("nl-NL")}
                   </p>
                 </div>
+              </div>
 
-                <div style={styles.companyBlock}>
-                  <h2 style={styles.companyName}>D Kuiper Techniek</h2>
-                  <p style={styles.muted}>Elektra & installaties</p>
-                  <p style={styles.muted}>KvK: nog invullen</p>
-                  <p style={styles.muted}>BTW: nog invullen</p>
-                </div>
-              </header>
-
-              <section style={styles.infoGrid}>
-                <div style={styles.infoBox}>
-                  <h3 style={styles.infoTitle}>Klant</h3>
-                  <p style={styles.text}>{actiefProject.klant}</p>
-                  <p style={styles.text}>Startdatum: {actiefProject.startdatum}</p>
-                  <p style={styles.text}>Status: {actiefProject.status}</p>
-                </div>
-
-                <div style={styles.infoBox}>
-                  <h3 style={styles.infoTitle}>Factuurgegevens</h3>
-                  <p style={styles.text}>Betalingstermijn: 14 dagen</p>
-                  <p style={styles.text}>Marge materialen: {data.margePercentage}%</p>
-                </div>
-              </section>
-
-              <h3 style={styles.blockTitle}>Materialen</h3>
+              {/* MATERIALEN */}
               <table style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Omschrijving</th>
                     <th style={styles.th}>Aantal</th>
-                    <th style={styles.th}>Verkoopprijs p.s.</th>
+                    <th style={styles.th}>Prijs p.s.</th>
                     <th style={styles.th}>Subtotaal</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(actiefProject.materialen || []).length === 0 ? (
+                  {(project.materialen || []).length === 0 ? (
                     <tr>
-                      <td style={styles.td} colSpan="4">Geen materialen toegevoegd</td>
+                      <td colSpan="4" style={styles.td}>
+                        Geen materialen
+                      </td>
                     </tr>
                   ) : (
-                    actiefProject.materialen.map((item, index) => {
-                      const verkoopPerStuk =
+                    project.materialen.map((item, index) => {
+                      const verkoop =
                         Number(item.inkoopprijs || 0) *
                         (1 + Number(data.margePercentage || 0) / 100);
+
+                      const totaal =
+                        verkoop * Number(item.aantal || 0);
 
                       return (
                         <tr key={index}>
                           <td style={styles.td}>{item.product}</td>
                           <td style={styles.td}>{item.aantal}</td>
-                          <td style={styles.td}>{euro(verkoopPerStuk)}</td>
-                          <td style={styles.td}>
-                            {euro(verkoopPerStuk * Number(item.aantal || 0))}
-                          </td>
+                          <td style={styles.td}>{euro(verkoop)}</td>
+                          <td style={styles.td}>{euro(totaal)}</td>
                         </tr>
                       );
                     })
@@ -145,53 +125,25 @@ export default function FacturenPage() {
                 </tbody>
               </table>
 
-              <h3 style={styles.blockTitle}>Arbeid</h3>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={styles.th}>Medewerker</th>
-                    <th style={styles.th}>Datum</th>
-                    <th style={styles.th}>Uren</th>
-                    <th style={styles.th}>Tarief</th>
-                    <th style={styles.th}>Subtotaal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(actiefProject.arbeid || []).length === 0 ? (
-                    <tr>
-                      <td style={styles.td} colSpan="5">Geen arbeid toegevoegd</td>
-                    </tr>
-                  ) : (
-                    actiefProject.arbeid.map((item, index) => (
-                      <tr key={index}>
-                        <td style={styles.td}>{item.medewerker}</td>
-                        <td style={styles.td}>{item.datum}</td>
-                        <td style={styles.td}>{item.uren}</td>
-                        <td style={styles.td}>{euro(item.tarief)}</td>
-                        <td style={styles.td}>
-                          {euro(Number(item.uren || 0) * Number(item.tarief || 0))}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-
+              {/* TOTALEN */}
               <div style={styles.totalBox}>
-                <div style={styles.totalRow}>
-                  <span>Materialen</span>
-                  <strong>{euro(totaal.materialen)}</strong>
+                <div style={styles.row}>
+                  <span>Subtotaal</span>
+                  <strong>{euro(berekening.subtotaal)}</strong>
                 </div>
-                <div style={styles.totalRow}>
-                  <span>Arbeid</span>
-                  <strong>{euro(totaal.arbeid)}</strong>
+
+                <div style={styles.row}>
+                  <span>BTW (21%)</span>
+                  <strong>{euro(berekening.btw)}</strong>
                 </div>
-                <div style={{ ...styles.totalRow, ...styles.totalFinal }}>
-                  <span>Totaal factuur</span>
-                  <strong>{euro(totaal.totaal)}</strong>
+
+                <div style={{ ...styles.row, ...styles.total }}>
+                  <span>Totaal</span>
+                  <strong>{euro(berekening.totaal)}</strong>
                 </div>
               </div>
-            </section>
+
+            </div>
           </>
         )}
       </div>
@@ -206,141 +158,101 @@ const styles = {
     background: "#eef2f6",
   },
   container: {
-    maxWidth: "1100px",
+    maxWidth: "1000px",
     margin: "0 auto",
   },
+
   navBar: {
     display: "flex",
     gap: "12px",
-    flexWrap: "wrap",
     background: "#fff",
     padding: "12px",
     borderRadius: "16px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
     marginBottom: "24px",
   },
   navLink: {
     textDecoration: "none",
     color: "#111827",
-    padding: "10px 14px",
+    padding: "10px",
     borderRadius: "10px",
-    fontWeight: 600,
   },
   navLinkActive: {
-    textDecoration: "none",
-    color: "#fff",
     background: "#111827",
-    padding: "10px 14px",
+    color: "#fff",
+    padding: "10px",
     borderRadius: "10px",
-    fontWeight: 600,
   },
+
   toolbar: {
     display: "flex",
     justifyContent: "flex-end",
-    marginBottom: "16px",
+    marginBottom: "10px",
   },
+
   printButton: {
     background: "#111827",
     color: "#fff",
+    padding: "10px 14px",
     border: "none",
-    padding: "12px 14px",
     borderRadius: "10px",
-    fontWeight: 600,
   },
+
   paper: {
     background: "#fff",
+    padding: "30px",
     borderRadius: "16px",
-    padding: "32px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
   },
-  title: {
-    marginTop: 0,
-  },
+
   header: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "20px",
-    flexWrap: "wrap",
-    marginBottom: "28px",
+    marginBottom: "20px",
   },
-  invoiceTitle: {
+
+  title: {
     margin: 0,
-    fontSize: "36px",
-    fontWeight: 800,
   },
-  companyBlock: {
-    textAlign: "right",
-  },
-  companyName: {
-    margin: 0,
-    fontSize: "22px",
-    fontWeight: 700,
-  },
-  muted: {
-    margin: "4px 0",
-    color: "#6b7280",
-    fontSize: "14px",
-  },
-  infoGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: "18px",
-    marginBottom: "28px",
-  },
-  infoBox: {
-    background: "#f9fafb",
-    padding: "18px",
-    borderRadius: "12px",
-  },
-  infoTitle: {
-    marginTop: 0,
-    marginBottom: "10px",
-    fontSize: "15px",
-    fontWeight: 700,
-  },
-  blockTitle: {
-    marginTop: "24px",
-    marginBottom: "12px",
-    fontSize: "18px",
-  },
+
   text: {
     margin: "4px 0",
-    fontSize: "14px",
   },
+
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    marginBottom: "24px",
+    marginTop: "20px",
   },
+
   th: {
     textAlign: "left",
-    padding: "12px",
-    background: "#f3f4f6",
-    borderBottom: "1px solid #d1d5db",
-    fontSize: "13px",
+    padding: "10px",
+    borderBottom: "1px solid #ccc",
   },
+
   td: {
-    padding: "12px",
-    borderBottom: "1px solid #e5e7eb",
-    fontSize: "14px",
+    padding: "10px",
+    borderBottom: "1px solid #eee",
   },
+
   totalBox: {
+    marginTop: "20px",
+    maxWidth: "300px",
     marginLeft: "auto",
-    maxWidth: "360px",
-    background: "#f9fafb",
-    borderRadius: "12px",
-    padding: "16px",
   },
-  totalRow: {
+
+  row: {
     display: "flex",
     justifyContent: "space-between",
     marginBottom: "10px",
-    fontSize: "15px",
   },
-  totalFinal: {
-    borderTop: "1px solid #d1d5db",
-    paddingTop: "12px",
-    marginTop: "12px",
+
+  total: {
+    borderTop: "1px solid #000",
+    paddingTop: "10px",
     fontSize: "18px",
+  },
+
+  card: {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "12px",
   },
 };
