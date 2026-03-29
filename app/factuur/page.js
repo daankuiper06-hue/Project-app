@@ -8,39 +8,6 @@ function euro(bedrag) {
 }
 
 export default function FactuurPage() {
-  let project = null;
-
-  if (typeof window !== "undefined") {
-    const params = new URLSearchParams(window.location.search);
-    const projectId = Number(params.get("projectId"));
-    const opgeslagen = localStorage.getItem("project-app-data-v1");
-    const projecten = opgeslagen ? JSON.parse(opgeslagen) : [];
-    project = projecten.find((p) => p.id === projectId) || null;
-  }
-
-  if (!project) {
-    return (
-      <main style={styles.page}>
-        <div style={styles.paper}>
-          <h1 style={styles.title}>Factuur</h1>
-          <p style={styles.text}>Geen project gevonden.</p>
-          <a href="/" style={styles.backButton}>← Terug naar dashboard</a>
-        </div>
-      </main>
-    );
-  }
-
-  const materiaalSubtotaal = (project.materialen || []).reduce((sum, item) => {
-    return sum + Number(item.aantal || 0) * Number(item.prijsInclBtw || 0);
-  }, 0);
-
-  const arbeidSubtotaal = (project.arbeid || []).reduce((sum, item) => {
-    return sum + Number(item.uren || 0) * Number(item.tarief || 0);
-  }, 0);
-
-  const btwBedrag = materiaalSubtotaal * 0.21;
-  const totaalFactuur = materiaalSubtotaal + arbeidSubtotaal;
-
   return (
     <main style={styles.page}>
       <div style={styles.toolbar}>
@@ -54,8 +21,8 @@ export default function FactuurPage() {
         <header style={styles.header}>
           <div>
             <h1 style={styles.invoiceTitle}>FACTUUR</h1>
-            <p style={styles.muted}>Factuurnummer: {project.id}</p>
-            <p style={styles.muted}>Project: {project.naam}</p>
+            <p style={styles.muted}>Factuurnummer: 2026-001</p>
+            <p style={styles.muted}>Datum: 29-03-2026</p>
           </div>
 
           <div style={styles.companyBlock}>
@@ -68,101 +35,52 @@ export default function FactuurPage() {
 
         <section style={styles.infoGrid}>
           <div style={styles.infoBox}>
-            <h3 style={styles.infoTitle}>Klant</h3>
-            <p style={styles.text}>{project.klant}</p>
-            <p style={styles.text}>Startdatum: {project.startdatum}</p>
-            <p style={styles.text}>Status: {project.status}</p>
+            <h3 style={styles.infoTitle}>Factuur aan</h3>
+            <p style={styles.text}>Klantnaam</p>
+            <p style={styles.text}>Straat 1</p>
+            <p style={styles.text}>1234 AB Plaats</p>
           </div>
 
           <div style={styles.infoBox}>
-            <h3 style={styles.infoTitle}>Factuurgegevens</h3>
-            <p style={styles.text}>
-              Datum: {new Date().toLocaleDateString("nl-NL")}
-            </p>
-            <p style={styles.text}>Betalingstermijn: 14 dagen</p>
+            <h3 style={styles.infoTitle}>Project</h3>
+            <p style={styles.text}>Projectnaam</p>
+            <p style={styles.text}>Werkdatum: 29-03-2026</p>
           </div>
         </section>
 
-        <h3 style={styles.blockTitle}>Materialen</h3>
         <table style={styles.table}>
           <thead>
             <tr>
               <th style={styles.th}>Omschrijving</th>
               <th style={styles.th}>Aantal</th>
-              <th style={styles.th}>Prijs p.s. incl. btw</th>
+              <th style={styles.th}>Prijs p.s.</th>
               <th style={styles.th}>BTW %</th>
-              <th style={styles.th}>Subtotaal</th>
+              <th style={styles.th}>Totaal</th>
             </tr>
           </thead>
           <tbody>
-            {(project.materialen || []).length === 0 ? (
-              <tr>
-                <td style={styles.td} colSpan="5">Geen materialen toegevoegd</td>
-              </tr>
-            ) : (
-              project.materialen.map((item, index) => (
-                <tr key={index}>
-                  <td style={styles.td}>{item.omschrijving}</td>
-                  <td style={styles.td}>{item.aantal}</td>
-                  <td style={styles.td}>{euro(item.prijsInclBtw)}</td>
-                  <td style={styles.td}>{item.btw}%</td>
-                  <td style={styles.td}>
-                    {euro(Number(item.aantal) * Number(item.prijsInclBtw))}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        <h3 style={styles.blockTitle}>Arbeid</h3>
-        <table style={styles.table}>
-          <thead>
             <tr>
-              <th style={styles.th}>Medewerker</th>
-              <th style={styles.th}>Datum</th>
-              <th style={styles.th}>Uren</th>
-              <th style={styles.th}>Tarief</th>
-              <th style={styles.th}>Subtotaal</th>
+              <td style={styles.td}>Voorbeeld regel</td>
+              <td style={styles.td}>1</td>
+              <td style={styles.td}>{euro(100)}</td>
+              <td style={styles.td}>21%</td>
+              <td style={styles.td}>{euro(100)}</td>
             </tr>
-          </thead>
-          <tbody>
-            {(project.arbeid || []).length === 0 ? (
-              <tr>
-                <td style={styles.td} colSpan="5">Geen arbeid toegevoegd</td>
-              </tr>
-            ) : (
-              project.arbeid.map((item, index) => (
-                <tr key={index}>
-                  <td style={styles.td}>{item.medewerker}</td>
-                  <td style={styles.td}>{item.datum}</td>
-                  <td style={styles.td}>{item.uren}</td>
-                  <td style={styles.td}>{euro(item.tarief)}</td>
-                  <td style={styles.td}>
-                    {euro(Number(item.uren) * Number(item.tarief))}
-                  </td>
-                </tr>
-              ))
-            )}
           </tbody>
         </table>
 
         <div style={styles.totalBox}>
           <div style={styles.totalRow}>
-            <span>Materialen incl. btw</span>
-            <strong>{euro(materiaalSubtotaal)}</strong>
+            <span>Subtotaal</span>
+            <strong>{euro(100)}</strong>
           </div>
           <div style={styles.totalRow}>
-            <span>Arbeid</span>
-            <strong>{euro(arbeidSubtotaal)}</strong>
-          </div>
-          <div style={styles.totalRow}>
-            <span>BTW over materialen</span>
-            <strong>{euro(btwBedrag)}</strong>
+            <span>BTW</span>
+            <strong>{euro(21)}</strong>
           </div>
           <div style={{ ...styles.totalRow, ...styles.totalFinal }}>
-            <span>Totaal factuur</span>
-            <strong>{euro(totaalFactuur)}</strong>
+            <span>Totaal</span>
+            <strong>{euro(121)}</strong>
           </div>
         </div>
       </div>
@@ -212,9 +130,6 @@ const styles = {
     padding: "32px",
     boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
   },
-  title: {
-    marginTop: 0,
-  },
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -256,11 +171,6 @@ const styles = {
     marginBottom: "10px",
     fontSize: "15px",
     fontWeight: 700,
-  },
-  blockTitle: {
-    marginTop: "24px",
-    marginBottom: "12px",
-    fontSize: "18px",
   },
   text: {
     margin: "4px 0",
