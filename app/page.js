@@ -1,3 +1,7 @@
 export default function Home() {
-  return <h1>Hij werkt 🔥</h1>;
+  return (
+    <main style={{padding: 20}}>
+      <h1>Project app werkt 🔥</h1>
+    </main>
+  )
 }
