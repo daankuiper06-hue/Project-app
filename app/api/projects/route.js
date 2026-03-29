@@ -1,4 +1,4 @@
-import { pool } from "../../../../lib/db";
+import { pool } from "../../../lib/db";
 
 export async function GET() {
   const projectsRes = await pool.query("SELECT * FROM projects ORDER BY id DESC");
