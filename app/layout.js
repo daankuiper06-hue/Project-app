@@ -1,3 +1,5 @@
+import { SpeedInsights } from '@vercel/speed-insights/next';
+
 export const metadata = {
   title: "Project App",
   description: "Projecten, calculaties en facturen",
@@ -15,6 +17,7 @@ export default function RootLayout({ children }) {
         }}
       >
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
